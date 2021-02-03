@@ -1,0 +1,392 @@
+---
+title: "Emergence_EPA_2020_11_19"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+citation('brms')
+citation('MuMIn')
+```
+
+## load packages
+```{r}
+
+library(MuMIn)
+library(dplyr)
+library(ggplot2)
+
+```
+
+## load data from EPA Wadeable Streams Assessment (available here: https://www.epa.gov/national-aquatic-resource-surveys/nrsa)
+```{r}
+epa_macros=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_benthics_pt1.csv")
+length(levels(epa_macros$SITE_ID)) # check sites
+
+epa_macros2=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_benthics_pt2.csv")
+length(levels(epa_macros2$SITE_ID)) # check sites
+
+epa_macros_metrics=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_benthics_metrics.csv") # includes metrics like TOLRPIND, %EPT, etc.
+head(epa_macros_metrics) # check
+
+epa_landuse=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_landuse.csv")  # land use metrics
+
+epa_waterchem=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_waterchem.csv") # chemical water quality
+
+epa_gps=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_sitelocations.csv")
+head(epa_gps)
+length(unique(epa_gps$LON_DD)) #check length
+length(unique(epa_gps$LAT_DD)) # check length
+length(epa_gps$SITE_ID) # check length
+epa_phab=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_PHAB.csv") # habitat metrics for EPA sites.
+
+epa_width=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_WSA_streamwidth.csv") # widths of streams
+
+all.imp=read.csv("/Users/davidmanning/Desktop/EmergenceAI/epa_wsa_isc.csv") # derived from urban_emerge_impervious_100517.R
+
+imp.gps=merge(epa_gps,all.imp,by="LON_DD")
+head(imp.gps)
+length(imp.gps$LON_DD)
+
+## merge data files by site id ##
+allmacros=rbind(epa_macros,epa_macros2)
+names(epa_macros) # check colnames
+names(epa_macros2) # check colnames
+names(allmacros) # check colnames
+
+epa_landchem=inner_join(epa_landuse,epa_waterchem,by="SITE_ID")
+head(epa_landchem)
+epa_landchemimp=inner_join(epa_landchem,imp.gps)
+head(epa_landchemimp)
+length(epa_landchemimp$SITE_ID) # check length
+
+names(epa_landchem)
+names(epa_waterchem)
+
+merged=inner_join(allmacros,epa_landchemimp)
+names(merged)
+merge1=inner_join(merged,epa_gps,by="SITE_ID")
+merge2=inner_join(merged,epa_phab,by="SITE_ID")
+merge3=inner_join(merge2,epa_width,by="SITE_ID")
+
+head(merge3)
+
+macros=merge3 # final merged dataset
+macros[1:10,] # check
+nrow(macros) # check
+
+```
+
+### create dataframe with cast that has columns by ORDER
+```{r}
+
+ggplot() + geom_point(data=macros,aes(y=COND,x=YEAR)) # samples collected 2000-2004.
+
+levels(macros$STATE.x) # check state names.
+
+names(macros) # check colnames
+
+library(reshape)
+reshape.frame=cast(macros,SITENAME+LON_DD+LAT_DD.x+STATE_NM+HUC4+DATE_COL.x+SITE_ID+RCHWIDTH+ST_ORDER+WSAREA+CatArea+region_vpu+PFOR+PWETL+PURB+PAGT+RDDENS+POPDENS+PctImp2006Cat+PctImp2006Ws+TSS+COND+CL+ELEV+PRECIP_M+ANC+PTL+NTL+TURB+PHSTVL+CA+MG+K+NH4+SO4+NO3+ZN+SIO2+CATSUM+ANSUM+ALKCALC+PCT_SAFN~FAMILY,value="ABUND",mean)
+reshape.frame[1:5,] # check that reshape worked.
+frame1=as.data.frame(reshape.frame)
+frame1[is.na(frame1)]=0
+ncol(frame1)
+names(frame1)
+fam.abund=as.data.frame(frame1[43:224]) # subset to columns that are invert counts
+fam.abund[1:5,]
+tot.abund=rowSums(fam.abund)
+tot.abund
+sites=as.data.frame(frame1[1:42]) # subsets to columns that are site-level water quality/land use etc.
+head(sites)
+nrow(sites)
+
+```
+
+## Dataframes separated by emergent/non-emergent taxa
+```{r}
+
+# create dataframe with only emergent taxa (according to family)
+colnames(fam.abund)
+emerge=with(fam.abund,(cbind(AESHNIDAE,AMELETIDAE,APATANIIDAE,ATHERICIDAE,BAETIDAE,BAETISCIDAE,BLEPHARICERIDAE,BRACHYCENTRIDAE,CAENIDAE,CALAMOCERATIDAE,CALOPTERYGIDAE,CAPNIIDAE,CERATOPOGONIDAE,CHAOBORIDAE,CHIRONOMIDAE,CHLOROPERLIDAE,COENAGRIONIDAE,CORDULEGASTRIDAE,CORDULIIDAE,CORYDALIDAE,CULICIDAE,DIPSEUDOPSIDAE,DIXIDAE,EMPIDIDAE,EPHEMERELLIDAE,EPHEMERIDAE,EPHYDRIDAE,GLOSSOSOMATIDAE,GOERIDAE,GOMPHIDAE,HELICOPSYCHIDAE,HEPTAGENIIDAE,HYDROBIOSIDAE,HYDROPSYCHIDAE,HYDROPTILIDAE,ISONYCHIIDAE,LEPIDOSTOMATIDAE,LEPTOCERIDAE,LEPTOHYPHIDAE,LEPTOPHLEBIIDAE,LESTIDAE,LEUCTRIDAE,LIBELLULIDAE,LIMNEPHILIDAE,MOLANNIDAE,MUSCIDAE,NEMOURIDAE,ODONTOCERIDAE,OLIGONEURIIDAE,PELECORHYNCHIDAE,PELTOPERLIDAE,PERLIDAE,PERLODIDAE,PHILOPOTAMIDAE,PHORIDAE,PHRYGANEIDAE,POLYCENTROPODIDAE,POLYMITARCYIDAE,POTAMANTHIDAE,PSYCHODIDAE,PSYCHOMYIIDAE,PTERONARCYIDAE,PTILODACTYLIDAE,PTYCHOPTERIDAE,PYRALIDAE,RHYACOPHILIDAE,SCATOPSIDAE,SCIOMYZIDAE,SERICOSTOMATIDAE,SIALIDAE,SIMULIIDAE,SIPHLONURIDAE,SISYRIDAE,STAPHYLINIDAE,STRATIOMYIDAE,SYRPHIDAE,TABANIDAE,TAENIOPTERYGIDAE,THAUMALEIDAE,TIPULIDAE,TORTRICIDAE,UENOIDAE)))
+
+emerge[1:5,]
+
+non.emerge=with(fam.abund,cbind(AMPHIZOIDAE,AMPULLARIIDAE,ANCYLIDAE,ANISITSIELLIDAE,ANISOGAMMARIDAE,ARRENURIDAE,ASELLIDAE,ASTACIDAE,ATURIDAE,ATYIDAE,AXONOPSIDAE,BELOSTOMATIDAE,BRANCHIOBDELLIDAE,CAMBARIDAE,CAMBARINCOLIDAE,CARABIDAE,CORBICULIDAE,CORIXIDAE,COROPHIIDAE,CRANGONYCTIDAE,CURCULIONIDAE,DRYOPIDAE,ELMIDAE,ENCHYTRAEIDAE,ERPOBDELLIDAE,EYLAIDAE,FELTRIIDAE,FRONTIPODOPSIDAE,GAMMARIDAE,GERRIDAE,GLOSSIPHONIIDAE,GYRINIDAE,HAEMOPIDAE,HALIPLIDAE,HAPLOTAXIDAE,HEBRIDAE,HELODIDAE,HETEROCERIDAE,HIRUDINIDAE,HYALELLIDAE,HYDRACHNIDAE,HYDRAENIDAE,HYDRIDAE,HYDROBIIDAE,HYDRODROMIDAE,HYDROMETRIDAE,HYDROPHILIDAE,HYDROVOLZIIDAE,HYDROZETIDAE,HYDRYPHANTIDAE,HYGROBATIDAE,KRENDOWSKIIDAE,LEBERTIIDAE,LIMNICHIDAE,LIMNESIIDAE,LIMNICHIDAE,LIMNOCHARIDAE,LUMBRICIDAE,LUMBRICULIDAE,LYMNAEIDAE,LYNCEIDAE,MARGARITIFERIDAE,MIDEOPSIDAE,MOMONIIDAE,MYSIDAE,NAIDIDAE,NAUCORIDAE,NEOACARIDAE,NOTERIDAE,NOTONECTIDAE,OXIDAE,PALAEMONIDAE,PHYSIDAE,PIONIDAE,PISIDIIDAE,PLANARIIDAE,PLANORBIDAE,PLEIDAE,PLEUROCERIDAE,PROTZIIDAE,PSEPHENIDAE,RHYNCHOHYDRACARIDAE,SPERCHONIDAE,STYGOTHROMBIDIIDAE,TETRASTEMMATIDAE,THYASIDAE,TORRENTICOLIDAE,TUBIFICIDAE,UNIONICOLIDAE,UNIONIDAE,VALVATIDAE,VELIIDAE,VIVIPARIDAE,ARGULIDAE,NAUTARACHNIDAE))
+non.emerge[1:5,] # check
+
+```
+
+# proportion emergent taxa
+```{r}
+tot.emerge=rowSums(emerge) # all 1325 sites 
+length(tot.emerge)
+summary(tot.emerge)
+
+# vector of proportion emergent insects by sample
+p.emerge=tot.emerge/tot.abund
+p.emerge
+length(p.emerge)
+summary(p.emerge)
+
+# vector of non-emergent insects by sample
+s.n.emerge <- rowSums(non.emerge)
+summary(s.n.emerge)
+n.emerge = s.n.emerge/tot.abund 
+summary(n.emerge)
+
+plot(n.emerge~p.emerge)
+
+```
+
+## Logistic regression model to examine the odds that emergent taxa is pollution tolerant.
+```{r}
+
+emerge_rows=which(macros$FAMILY%in%colnames(emerge))
+
+emerge_binom=ifelse(macros$FAMILY%in%colnames(emerge),0,1)
+macros[999,] # check
+
+binom1=glm(emerge_binom~PTV,data=macros,family="binomial")
+summary(binom1)
+confint(binom1)
+exp(0.560) # 1.75x increase in odds of non-emergent taxa per unit increase in PTV
+exp(0.5495)
+exp(0.5722)
+
+```
+
+Generate macroinv/water quality dataset aggregated by STATE_NM
+```{r}
+agg_sites=with(sites,aggregate(cbind(WSAREA,PFOR,PURB,PAGT,RDDENS,POPDENS,PctImp2006Ws,TSS,COND,CL,ELEV,PRECIP_M,ANC,PTL,NTL,TURB,PHSTVL,CA,MG,K,NH4,SO4,NO3,ZN,SIO2,CATSUM,ANSUM,ALKCALC,PCT_SAFN),by=list(STATE_NM),FUN=mean,na.rm=T))
+head(agg_sites)
+ncol(agg_sites)
+colnames(agg_sites)=c("STATE_NM",names(agg_sites[2:ncol(agg_sites)])) # rename columns.
+
+# examine normal q-q plots to assess if data are normally distributed
+library(qqplotr)
+melt_streams <- melt(agg_sites[,-c(8,13)])
+
+str_norm <- ggplot(data=melt_streams,aes(sample=value)) + stat_qq_line() + stat_qq_point() + facet_wrap(~ variable,scales="free") + labs(x = "Theoretical Quantiles", y = "Sample Quantiles")
+str_norm
+
+```
+
+Add relative abundance emergent, non-emergent sites data.frame
+```{r}
+names(sites)
+sites$p.emerge <- p.emerge
+sites$p.emerge
+sites$n.emerge <- n.emerge
+
+
+agg_p.emerge=aggregate(cbind(p.emerge,n.emerge),by=list(sites$STATE_NM),FUN=mean,na.rm=T)
+colnames(agg_p.emerge)=c("STATE_NM","p.emerge","n.emerge")
+agg_p.emerge
+
+#agg_pred.emerge=aggregate(pred.emerge,by=list(sites$STATE_NM),FUN=mean,na.rm=T)
+#colnames(agg_pred.emerge)=c("STATE_NM","pred.emerge")
+
+#st_p.emerge=left_join(agg_sites,agg_p.emerge)
+#st_p.emerge=left_join(st_p.emerge,agg_pred.emerge)
+
+agg_p.emerge$STATE_NM
+STATE=c("AL","AZ","AR","CA","CO","CT","DE","FL","GA","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY") # vector of state abbreviations
+agg_p.emerge=cbind(agg_p.emerge,STATE) # add state to the agg_p.emerge data.frame
+head(agg_p.emerge) # check
+colnames(agg_p.emerge)=c("STATE_1","p.emerge","n.emerge","STATE") # rename columns
+#colnames(st_p.emerge)=c(names(st_p.emerge[,1:32]),"State")
+#head(st_p.emerge)
+
+agg_sites=cbind(agg_sites,STATE)
+head(agg_sites)
+
+```
+
+Data prep for model selection for best-supported predictors of EPA macroinvert metrics
+```{r}
+library(car)
+library(usdm)
+
+# prep data, check for normality etc.
+melt_streams <- melt(agg_sites[,-c(8,13)])
+
+str_norm <- ggplot(data=melt_streams,aes(sample=value)) + stat_qq_line() + stat_qq_point() + facet_wrap(~ variable,scales="free") + labs(x = "Theoretical Quantiles", y = "Sample Quantiles")
+str_norm
+
+# log transformations
+logWsArea=log10(agg_sites$WSAREA)
+PFOR=agg_sites$PFOR #PFOR is approx normal
+pURB=agg_sites$PURB/100 # convert to proportion instead of %
+logitUrb=log(pURB/(1-pURB)) # logit function not working?
+boxplot(logitUrb) # apply logit tranformation in model to meet normality assump.
+pAGT=agg_sites$PAGT/100 # convert to proportion
+logitAg=log(pAGT/(1-pAGT)) # logit transformed.
+boxplot(agg_sites$PAGT) # no transformation
+boxplot(logitAg) # logit transformation to meet normality assump.
+logRD=log10(agg_sites$RDDENS)
+logPOP=log10(agg_sites$POPDENS)
+logISC=log10(agg_sites$PctImp2006Ws)
+logTSS=log10(agg_sites$TSS)
+logCOND=log10(agg_sites$COND)
+logCL=log10(agg_sites$CL)
+logElev=log10(agg_sites$ELEV)
+# precip is approx normal
+ANC=agg_sites$ANC # anc not transformed
+logTP=log10(agg_sites$PTL)
+logTN=log10(agg_sites$NTL)
+logTurb=log10(agg_sites$TURB)
+SRP=agg_sites$PHSTVL # phosphate not transformed
+logCA=log10(agg_sites$CA)
+logMG=log10(agg_sites$MG)
+logK=log10(agg_sites$K)
+logNH4=log10(agg_sites$NH4)
+logSO4=log10(agg_sites$SO4)
+logNO3=log10(agg_sites$NO3)
+ZN=agg_sites$ZN # ZN approx normal
+logSi=log10(agg_sites$SIO2)
+logCAT=log10(agg_sites$CATSUM)
+logAN=log10(agg_sites$ANSUM)
+logALK=log10(agg_sites$ALKCALC)
+SAFN=agg_sites$PCT_SAFN # SAFN not transformed
+
+logWQ=data.frame(logTSS,logCOND,logCL,ANC,logTP,logTN,logTurb,SRP,logCA,logMG,logK,logNH4,logSO4,logNO3,logCAT,logAN,logALK,SAFN)
+sm_WQ=data.frame(logSi,SAFN,logNO3,logTN)
+logLand=data.frame(logWsArea,PFOR,logitUrb,logitAg,logRD,logPOP,logISC,logElev,agg_sites$PRECIP_M,agg_p.emerge$p.emerge)
+log_land_wq=data.frame(logWQ,logLand)
+
+logALL=data.frame(logWQ,logLand)
+ncol(logALL)
+names(logALL)
+colnames(logALL)=c(colnames(logALL[1:26]),"precip_m","p.emerge",colnames(logALL[29:46]))
+head(logALL)
+
+# trim dataframe to include variables without major collinearity problems (<=0.75)
+vifcor(log_land_wq,th=0.75)
+vifcor(agg_metrics[,2:19],th=0.75)
+
+# remained variables = Cl, TP, Turb, K, NH4, SO4, NO3, SAFN, WsArea, pAG, Road Density, Elev, precip
+
+# dataframe including remaining variables from vifcor analysis
+logEmerge=with(log_land_wq,data.frame(scale(logCL),scale(logTP),scale(logTurb),scale(logK),scale(logNH4),scale(logSO4),scale(logNO3),scale(SAFN),scale(logWsArea),scale(logitAg),scale(logRD),scale(logElev),scale(agg_sites.PRECIP_M),agg_p.emerge$p.emerge,agg_p.emerge$n.emerge,agg_sites$STATE)) 
+colnames(logEmerge)=c("Cl","TP","Turb","K","NH4","SO4","NO3","SAFN","WsArea","AG","RD","Elev","Precip","p.emerge","n.emerge","STATE")
+summary(logEmerge)
+
+
+```
+
+Model selection process using muMIn going from global model including above variables from vifcor analysis; selection based on delta AICc < 2
+```{r}
+
+options(na.action="na.fail")
+
+# p. emerge model
+p.emerge.full=lm(p.emerge~Cl+TP+Turb+K+NH4+SO4+NO3+SAFN+WsArea+AG+RD+Elev+Precip,data=logEmerge)
+
+dd_p.emerge=dredge(p.emerge.full,beta="none")
+p.emerge_top=subset(dd_p.emerge,delta<2)
+p.emerge_top
+p.emerge_avg=model.avg(p.emerge_top)
+summary(p.emerge_avg) # RD, SAFN, NH4
+1-10^(-0.0704) # SAFN
+1-10^(-0.022) # RD
+1-10^(-0.040) # NH4
+
+p.emerge_int=lm(agg_p.emerge$p.emerge~1)
+summary(p.emerge_int)
+AICc(p.emerge_int) # -59.209
+
+# n.emerge model
+n.emerge.full=lm(n.emerge~Cl+TP+Turb+K+NH4+SO4+NO3+SAFN+WsArea+AG+RD+Elev+Precip,data=logEmerge)
+
+dd_n.emerge=dredge(n.emerge.full,beta="none")
+n.emerge_top=subset(dd_n.emerge,delta<2)
+n.emerge_top
+n.emerge_avg=model.avg(n.emerge_top)
+summary(n.emerge_avg)
+
+```
+
+```{r}
+names(epa_macros_metrics)
+agg_metrics <- epa_macros_metrics %>%
+  group_by(STATE) %>%
+  summarise(TOLRPIND=mean(TOLRPIND),EPT_PIND=mean(EPT_PIND))
+
+agg_str_metrics <- inner_join(agg_p.emerge,agg_metrics)
+cor(agg_str_metrics$p.emerge,agg_str_metrics$TOLRPIND) # -0.798
+cor(agg_str_metrics$p.emerge,agg_str_metrics$EPT_PIND) # 0.704
+
+
+```
+
+Code chunk to produce Fig 1 MAPS of macroinvertebrate abundance and traits
+```{r}
+
+library(ggmap)
+library(maps)
+library(mapdata)
+
+usa=map_data('usa')
+states=map_data('state')
+head(states)
+
+state_fac=as.factor(states$region)
+state_names=levels(state_fac)
+map_emerge=data.frame(state_names[-8],agg_p.emerge$p.emerge,agg_lakeEmerge$l.emerge)
+colnames(map_emerge)=c("region","p.emerge","l.emerge")
+fill_emerge=inner_join(states,map_emerge,by="region")
+head(fill_emerge)
+
+us_base=ggplot(data=fill_emerge,mapping=aes(x=long,y=lat,group=group))+coord_fixed(1.3)+geom_polygon(color="black",fill="gray")
+us_base
+
+ditch_the_axes <- theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank()
+)
+
+p.emerge_map=us_base+geom_polygon(data=fill_emerge,aes(fill=p.emerge))+geom_polygon(color="black",fill=NA)
+p.emerge_map
+pe2=p.emerge_map+scale_fill_gradient(low="red",high="blue",name="Streams")
+pe_f=pe2+theme_classic()+ditch_the_axes + theme(legend.position="right") + labs(fill="Streams")
+pe_f
+
+
+l.map=us_base+geom_polygon(data=fill_emerge,aes(fill=l.emerge))+geom_polygon(color="black",fill=NA)
+l.map2=l.map+scale_fill_gradient(low="red",high="blue",name="Lakes")
+l.map.f=l.map2+theme_classic()+ditch_the_axes + theme(legend.position="right") + labs(fill="Lakes")
+l.map.f
+
+
+library(ggpubr)
+
+ggarrange(pe_f,l.map.f,ncol=1,labels=c("a","b"))
+
+```
+
+
+Code chunk to produce Fig. 2A-C
+```{r}
+library(ggpubr)
+names(agg_sites)
+mean_sites<-inner_join(agg_p.emerge,agg_sites)
+summary(p.emerge_avg)
+
+nh4 <- ggplot() + geom_point(data=mean_sites,aes(x=NH4,y=p.emerge)) + geom_smooth(data=mean_sites,method="lm",aes(x=NH4,y=p.emerge)) + theme_classic() + scale_x_log10() + labs(x=expression(NH[4]-N~(mg~L^-1)),y="Rel. abund. emergent") + theme(text = element_text(size=20)) + ylim(c(0,1))
+nh4
+
+rd <- ggplot() + geom_point(data=mean_sites,aes(x=RDDENS,y=p.emerge)) + geom_smooth(data=mean_sites,method="lm",aes(x=RDDENS,y=p.emerge)) + theme_classic() + scale_x_log10() + labs(x=expression(Road~density~(km~roads~km^-2~watershed)),y="") + theme(text = element_text(size=20)) + ylim(c(0,1))
+rd
+
+safn <- ggplot() + geom_point(data=mean_sites,aes(x=SAFN,y=p.emerge)) + geom_smooth(data=mean_sites,method="lm",aes(x=SAFN,y=p.emerge)) + theme_classic() + labs(x="% sand and fines",y="Rel. abund. emergent") + theme(text = element_text(size=20)) + ylim(c(0,1))
+safn
+
+ggarrange(nh4,rd,safn,labels=c("A","B","C"))
+
+```
