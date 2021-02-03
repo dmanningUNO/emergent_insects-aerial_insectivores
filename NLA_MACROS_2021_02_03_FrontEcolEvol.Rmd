@@ -1,0 +1,240 @@
+---
+title: "NLA_MACROS"
+author: "David"
+date: "11/7/2018"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Load packages
+```{r}
+library(MuMIn)
+library(lme4)
+
+#install.packages('reshape')
+
+library(reshape)
+library(tidyr)
+library(dplyr)
+
+```
+
+Load NLA 2007 data
+```{r}
+
+# load data
+# note: update working directory as needed.
+
+NLA_2007=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_NARS_LAKES_MACROS_2007.csv")
+
+NLA_2007_landuse=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA_2007_landuse.csv")
+NLA_2007_waterchem=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA_2007_waterchem.csv")
+head(NLA_2007_waterchem)
+NLA_2007_siteinfo=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA_2007_siteinfo.csv")
+head(NLA_2007_siteinfo)
+NLA_2007_waterquality=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA2007_WaterQuality_20091123.csv")
+
+NLA_2007_metrics=read.csv("/Users/davidmanning/Documents/EPA_NLA_Benthic_metrics.csv")
+names(NLA_2007_metrics)
+
+dat1=inner_join(NLA_2007,NLA_2007_siteinfo,by="SITE_ID")
+dat2=inner_join(dat1,NLA_2007_landuse,"SITE_ID")
+dat3=inner_join(dat2,NLA_2007_waterquality,by="SITE_ID")
+dat4=inner_join(dat3,NLA_2007_metrics,by="SITE_ID")
+
+```
+
+Explore NLA data
+```{r}
+
+head(dat3)
+head(dat4)
+names(dat4)
+str(dat4)
+names(dat4)
+ggplot() + geom_point(data=dat4,aes(x=YEAR.x,y=NTL))
+
+```
+
+Reshape data with columns by order
+```{r}
+
+head(dat3)
+names(dat3)
+library(reshape)
+
+l.reshape.frame=cast(dat3,SITE_ID+LON_DD+LAT_DD+STATE+LAKEAREA+LAKENAME+HUC_8+BASINAREA_KM2+PCT_DEVELOPED_BSN+PCT_DECID_BSN+PCT_CONIF_BSN+PCT_MIXED_BSN+PCT_FOREST_BSN+PCT_SHRUBLAND_BSN+PCT_GRASS_BSN+PCT_PASTURE_BSN+PCT_CROPS_BSN+PCT_AGRIC_BSN+PCT_WETLAND_BSN+SECMEAN+PH_LAB+COND+ANC+TURB+NH4N_PPM+NO3_NO2+NTL+PTL+CL_PPM+NO3N_PPM+SO4_PPM+CA_PPM+MG_PPM+K_PPM+SIO2+CHLA~FAMILY,value="TOTAL_300",mean)
+l.reshape.frame[1:5,]
+l.frame1=as.data.frame(l.reshape.frame)
+l.frame1[is.na(l.frame1)]=0
+ncol(l.frame1)
+names(l.frame1)
+l.fam.abund=as.data.frame(l.frame1[38:187])
+l.fam.abund[1:5,]
+l.tot.abund=rowSums(l.fam.abund)
+l.tot.abund
+l.sites=as.data.frame(l.frame1[1:36])
+head(l.sites)
+
+length(l.tot.abund) # n = 1210 sites
+
+
+
+
+```
+
+Classify as emergent/non-emergent macroinvertebrates by family.
+```{r}
+
+colnames(l.fam.abund) # list of families
+emerge_lake=with(l.fam.abund,(cbind(AESHNIDAE,AMELETIDAE,BAETIDAE,BAETISCIDAE,BRACHYCENTRIDAE,CAENIDAE,CALOPTERYGIDAE,CAPNIIDAE,CERATOPOGONIDAE,CHAOBORIDAE,CHIRONOMIDAE,CHLOROPERLIDAE,COENAGRIONIDAE,CORDULIIDAE,CORYDALIDAE,CRAMBIDAE,CULICIDAE,DIPSEUDOPSIDAE,DOLICHOPODIDAE,EMPIDIDAE,EPHEMERELLIDAE,EPHEMERIDAE,EPHYDRIDAE,GOMPHIDAE,HELICOPSYCHIDAE,HEPTAGENIIDAE,HYDROPSYCHIDAE,HYDROPTILIDAE,LEPIDOSTOMATIDAE,LEPTOCERIDAE,LEPTOHYPHIDAE,LEPTOPHLEBIIDAE,LESTIDAE,LIBELLULIDAE,LIMNEPHILIDAE,MACROMIIDAE,METRETOPODIDAE,MOLANNIDAE,MUSCIDAE,NEMOURIDAE,PERLIDAE,PERLODIDAE,PHILOPOTAMIDAE,PHRYGANEIDAE,POLYCENTROPODIDAE,POLYMITARCYIDAE,PSYCHODIDAE,PSYCHOMYIIDAE,PYRALIDAE,RHYACOPHILIDAE,SCIOMYZIDAE,SERICOSTOMATIDAE,SIALIDAE,SIMULIIDAE,SIPHLONURIDAE,SISYRIDAE,STRATIOMYIDAE,TABANIDAE,TAENIOPTERYGIDAE,TIPULIDAE)))
+
+n.emerge_lake=with(l.fam.abund,(cbind(AEOLOSOMATIDAE,AMPULLARIIDAE,ANCYLIDAE,ARGULIDAE,ARRENURIDAE,ARTEMIIDAE,ASELLIDAE,ASTACIDAE,ATURIDAE,BALANIDAE,BELOSTOMATIDAE,BITHYNIIDAE,CAMBARIDAE,CHRYSOMELIDAE,CORBICULIDAE,COROPHIIDAE,CRANGONYCTIDAE,DREISSENIDAE,DRYOPIDAE,DYTISCIDAE,ELMIDAE,ENCHYTRAEIDAE,ERPOBDELLIDAE,EYLAIDAE,FELTRIIDAE,GAMMARIDAE,GLOSSIPHONIIDAE,GRAPSIDAE,GYRINIDAE,HALIPLIDAE,HELOPHORIDAE,HIRUDINIDAE,HYALELLIDAE,HYDRACHNIDAE,HYDRAENIDAE,HYDRIDAE,HYDROBIIDAE,HYDROCHIDAE,HYDRODROMIDAE,HYDROPHILIDAE,HYDROSCAPHIDAE,HYDRYPHANTIDAE,HYGROBATIDAE,KRENDOWSKIIDAE,LEBERTIIDAE,LEPTOCHELIIDAE,LIMNESIIDAE,LIMNOCHARIDAE,LUMBRICULIDAE,LYMNAEIDAE,LYNCEIDAE,MIDEIDAE,MIDEOPSIDAE,MOMONIIDAE,MYSIDAE,NAIDIDAE,NAUCORIDAE,NEPIDAE,NEREIDIDAE,NOTERIDAE,OEDICEROTIDAE,OXIDAE,PALAEMONIDAE,PENAEIDAE,PHYSIDAE,PIONIDAE,PISCICOLIDAE,PISIDIIDAE,PLANARIIDAE,PLANORBIDAE,PLEIDAE,PLEUROCERIDAE,PSEPHENIDAE,SABELLIDAE,SCIRTIDAE,SERPULIDAE,SPERCHONIDAE,SPERCHONTIDAE,SPHAEROMATIDAE,SPIONIDAE,TETRASTEMMATIDAE,THIARIDAE,THYASIDAE,TORRENTICOLIDAE,TUBIFICIDAE,UNIONICOLIDAE,UNIONIDAE,VALVATIDAE,VIVIPARIDAE,WETTINIDAE)))
+
+l.tot.emerge=rowSums(emerge_lake) 
+length(l.tot.emerge) #1210
+
+l.emerge=l.tot.emerge/l.tot.abund
+summary(l.emerge)
+
+l.non.emerge <- rowSums(n.emerge_lake)
+n.l.emerge=l.non.emerge/l.tot.abund
+plot(n.l.emerge~l.emerge)
+
+
+```
+
+Binomial regresssion for emergence trait (LAKES)
+```{r}
+l.emerge_rows=which(dat4$FAMILY%in%colnames(emerge_lake))
+
+l.emerge_binom=ifelse(dat4$FAMILY%in%colnames(emerge_lake),0,1)
+dat4[999,]
+l.emerge_binom[999]
+
+names(dat4)
+which(is.na(l.emerge_binom))
+summary(l.emerge_binom)
+summary(dat4$PTV)
+?is.na
+nrow(dat4)
+
+indicator_emerge <- data.frame(l.emerge_binom,dat4$PTV)
+colnames(indicator_emerge) <- c("l.emerge_binom","PTV")
+
+binom2=glm(l.emerge_binom~PTV,data=indicator_emerge[-which(is.na(indicator_emerge$PTV)),],family="binomial")
+summary(binom2)
+confint(binom2)
+exp(0.702)
+exp(0.692)
+exp(0.712)
+
+```
+
+
+Aggregate lake benthic macroinvert metrics (e.g., EPT_PIND,TOLRPIND)
+```{r}
+library(qqplotr)
+names(dat4)
+agg_lake_metrics=aggregate(dat4[,346:512],by=list(dat4$STATE),FUN=mean,na.rm=T)
+head(agg_lake_metrics)
+
+colnames(agg_lake_metrics)=c("STATE",names(agg_lake_metrics[2:ncol(agg_lake_metrics)]))
+
+join_lakes_metrics <- inner_join(agg_lake_metrics,agg_lakeEmerge)
+names(join_lakes_metrics)
+
+cor(join_lakes_metrics$l.emerge,join_lakes_metrics$EPT_PIND)
+cor(join_lakes_metrics$l.emerge,join_lakes_metrics$TOLRPIND)
+
+```
+
+
+Prep data for model selection using 'MuMIn'
+```{r}
+names(l.sites)
+
+names(l.sites)
+lakes_wq <- with(l.sites,aggregate(cbind(BASINAREA_KM2,PCT_DEVELOPED_BSN,PCT_AGRIC_BSN,SECMEAN,PH_LAB,COND,ANC,NTL,PTL,CL_PPM,SO4_PPM,CHLA),by=list(STATE),FUN=mean,na.rm=T)) # vars that correspond to common lake water quality metrics (e.g., trophic state metrics, conductivity, pH)
+head(lakes_wq)
+
+library(reshape2)
+#install.packages('qqplotr')
+library(qqplotr)
+
+lmelt <- melt(lakes_norm,id=c(1:12),measure=2:ncol(lakes_wq))
+lmelt <- melt(lakes_wq)
+names(lmelt)
+
+l_norm <- ggplot(data=lmelt,aes(sample=value)) + stat_qq_line() + stat_qq_point() + facet_wrap(~ variable,scales="free") + labs(x = "Theoretical Quantiles", y = "Sample Quantiles")
+l_norm
+
+# diagnostic plots show PH_LAB, SECMEAN close to normal; all others right-skewed, need log-transformation
+
+names(lakes_wq)
+log_agg_lakes=data.frame(lakes_wq[,1],log10(lakes_wq[,2:13]))
+names(log_agg_lakes)
+colnames(log_agg_lakes)=c("STATE",names(log_agg_lakes[2:13]))
+summary(log_agg_lakes)
+names(log_agg_lakes)
+
+# check for multicollinearity problems.
+
+vifcor(log_agg_lakes[,c(2:13)],th=0.75)
+
+agg_lakeEmerge=aggregate(cbind(l.emerge,n.l.emerge),by=list(l.sites$STATE),FUN=mean,na.rm=T)
+head(agg_lakeEmerge)
+colnames(agg_lakeEmerge)=c("STATE","l.emerge","n.l.emerge")
+
+```
+
+
+Model selection process
+```{r}
+#install.packages('usdm')
+library(usdm)
+
+library('MuMIn')
+names(agg_lakeEmerge)
+
+agg_lakeEmerge=data.frame(agg_lakeEmerge,log_agg_lakes)
+names(agg_lakeEmerge)
+
+# emergent
+glob.mod1=lm(l.emerge~BASINAREA_KM2+PCT_DEVELOPED_BSN+PCT_AGRIC_BSN+SECMEAN+PH_LAB+COND+ANC+NTL+PTL+CL_PPM+SO4_PPM+CHLA,data=agg_lakeEmerge)
+dd.lake1=dredge(glob.mod1,beta="sd")
+dd.lake.top1=subset(dd.lake1,delta<2)
+dd.lake.avg1=model.avg(dd.lake.top1)
+summary(dd.lake.avg1)
+
+# non-emergent
+glob.mod2=lm(n.l.emerge~BASINAREA_KM2+PCT_DEVELOPED_BSN+PCT_AGRIC_BSN+SECMEAN+PH_LAB+COND+ANC+NTL+PTL+CL_PPM+SO4_PPM+CHLA,data=agg_lakeEmerge)
+dd.lake2=dredge(glob.mod2,beta="sd")
+dd.lake.top2=subset(dd.lake2,delta<2)
+dd.lake.avg2=model.avg(dd.lake.top2)
+summary(dd.lake.avg2)
+
+l.emerge_int=lm(agg_lakeEmerge$l.emerge~1)
+summary(l.emerge_int)
+AICc(l.emerge_int) # -59.209
+
+
+
+```
+
+
+Code chunks to produce lake emergent insect vs. lake water quality plots (plots not included in publication).
+```{r}
+names(agg_lakeEmerge)
+chl <- ggplot() + geom_point(data=agg_lakeEmerge,aes(x=10^CHLA,y=l.emerge)) + geom_smooth(data=agg_lakeEmerge,aes(x=10^CHLA,y=l.emerge)) + theme_classic() + labs(x="Chlorophyll a",y="Rel. abund. emergent")
+chl
+
+ptl <- ggplot() + geom_point(data=agg_lakeEmerge,aes(x=10^PTL,y=l.emerge)) + geom_smooth(data=agg_lakeEmerge,aes(x=10^PTL,y=l.emerge)) + theme_classic() + labs(x="TP (mg/L)",y="") + scale_x_log10()
+ptl
+
+cl <- ggplot() + geom_point(data=agg_lakeEmerge,aes(x=10^CL_PPM,y=l.emerge)) + geom_smooth(data=agg_lakeEmerge,aes(x=10^CL_PPM,y=l.emerge)) + theme_classic() + labs(x="Chloride (mg/L)",y="") + scale_x_log10()
+cl
+
+```
+
