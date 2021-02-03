@@ -26,16 +26,16 @@ Load NLA 2007 data
 # load data
 # note: update working directory as needed.
 
-NLA_2007=read.csv("/Users/davidmanning/Desktop/EmergenceAI/EPA_NARS_LAKES_MACROS_2007.csv")
+NLA_2007=read.csv("/Users/davidmanning/Desktop/EPA data/EPA_NARS_LAKES_MACROS_2007.csv")
 
-NLA_2007_landuse=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA_2007_landuse.csv")
-NLA_2007_waterchem=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA_2007_waterchem.csv")
+NLA_2007_landuse=read.csv("/Users/davidmanning/Desktop/EPA data/NLA_2007_landuse.csv")
+NLA_2007_waterchem=read.csv("/Users/davidmanning/Desktop/EPA data/NLA_2007_waterchem.csv")
 head(NLA_2007_waterchem)
-NLA_2007_siteinfo=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA_2007_siteinfo.csv")
+NLA_2007_siteinfo=read.csv("/Users/davidmanning/Desktop/EPA data/NLA_2007_siteinfo.csv")
 head(NLA_2007_siteinfo)
-NLA_2007_waterquality=read.csv("/Users/davidmanning/Desktop/EmergenceAI/NLA2007_WaterQuality_20091123.csv")
+NLA_2007_waterquality=read.csv("/Users/davidmanning/Desktop/EPA data/NLA2007_WaterQuality_20091123.csv")
 
-NLA_2007_metrics=read.csv("/Users/davidmanning/Documents/EPA_NLA_Benthic_metrics.csv")
+NLA_2007_metrics=read.csv("/Users/davidmanning/Desktop/EPA data/EPA_NLA_Benthic_metrics.csv")
 names(NLA_2007_metrics)
 
 dat1=inner_join(NLA_2007,NLA_2007_siteinfo,by="SITE_ID")
