@@ -6,14 +6,14 @@ editor_options:
 ---
 
 
-# USGS Breeding Bird Survey Analysis for Manning & Sullivan 2021
+USGS Breeding Bird Survey Analysis for Manning & Sullivan 2021
 ```{r load dplyr}
 
 library(dplyr)
 
 ```
 
-## USGS analyzed data (annual indices of abundance) can be found here: https://www.mbr-pwrc.usgs.gov/
+USGS analyzed data (annual indices of abundance) can be found here: https://www.mbr-pwrc.usgs.gov/
 ```{r  load bbs data}
 bbs_indices=read.csv("/Users/davidmanning/Documents/BBS_Annual_Indices_Estimates_2015_7-29-2016.csv")
 head(bbs_indices) # check
@@ -21,7 +21,7 @@ str(bbs_indices) # check structure
 
 ```
 
-## The following code chunk removes data from Canada, subsets BBS data to to aerial insectivore species, plus Mourning Dove, Goldfinch, Gray Catbird, White-breasted Nuthatch
+The following code chunk removes data from Canada, subsets BBS data to to aerial insectivore species, plus Mourning Dove, Goldfinch, Gray Catbird, White-breasted Nuthatch
 ```{r}
 
 levels(bbs_indices$Region.Code) # check Region.Code
@@ -49,7 +49,7 @@ names(usgs_us)
 
 ```
 
-## code chunk subsets BBS dataset by year(s) that coincided with US EPA's Wadeable Streams Assessment (2000-2004), and National Lakes Assessment (2007) (plus 2008 and 2009)
+Code chunk subsets BBS dataset by year(s) that coincided with US EPA's Wadeable Streams Assessment (2000-2004), and National Lakes Assessment (2007) (plus 2008 and 2009)
 ```{r subset bbs dataset by year}
 
 # note: PSFL not available in these data, likely because of discussion surrounding its sympatry with Cordilleran Flycatcher.
@@ -124,7 +124,7 @@ bbs_00_09$year <- c(rep("2000",837),rep("2001",837),rep("2002",837),rep("2003",8
 
 ```
 
-## compare annual index values among years
+Compare annual index values among years
 ```{r}
 
 bbs_year_lm <- lm(ann_ind~year,data=bbs_00_09)
@@ -137,7 +137,7 @@ summary(bbs_aov)
 
 ```
 
-## BBS Annual index values not different among years in this time span, proceed with analysis focusing on final year of WSA (2004) and NLA (2007). This chunk subsets the data to those years only and joins with aquatic insect data from EPA surveys.
+BBS Annual index values not different among years in this time span, proceed with analysis focusing on final year of WSA (2004) and NLA (2007). This chunk subsets the data to those years only and joins with aquatic insect data from EPA surveys.
 
 ``` {r}
 
@@ -188,7 +188,7 @@ agg_str_metrics$Region.Code <- c("ALA","ARI","ARK","CAL","COL","CON","DEL","FLA"
 
 ```
 
-## Bayesian models testing for relationships between bird species annual indices of abundance and relative abundance of emergent insects (streams + lakes)
+Bayesian models testing for relationships between bird species annual indices of abundance and relative abundance of emergent insects (streams + lakes)
 ```{r}
 
 library(brms)
@@ -206,7 +206,7 @@ coef(brm04_hab,probs=c(0.05,0.95))
 
 ```
 
-## Bayesian models for relationships between BBS annual indices of abundance and Ephemeroptera, Plecoptera, Trichoptera (EPA metric = 'EPT_PIND'), and percent tolerant individuals (EPA metric = 'TOLRPIND') found in streams.
+Bayesian models for relationships between BBS annual indices of abundance and Ephemeroptera, Plecoptera, Trichoptera (EPA metric = 'EPT_PIND'), and percent tolerant individuals (EPA metric = 'TOLRPIND') found in streams.
 ```{r}
 bbs_2004_1$pEPT=bbs_2004_1$EPT_PIND/100 # convert from % to proportion
 bbs_2004_1$pTOL <- bbs_2004_1$TOLRPIND/100 # convert from % to proportion
@@ -229,7 +229,7 @@ str04_tol_coef <- data.frame(coef(brm04_tol,probs=c(0.05,0.95)))
 ```
 
 
-### Code to produce Figure 3 (coefficients of bird responses to stream insects by species)
+Code to produce Figure 3 (coefficients of bird responses to stream insects by species)
 ```{r}
 
 names(str04_coef)
@@ -293,7 +293,7 @@ ggarrange(stp,st_ept,st_tol,labels=c("a","b","c"),nrow=1)
 
 
 
-## BBS annual indices of abundance from 2007 vs. aquatic insect data from EPA National Lakes Assessment survey.
+BBS annual indices of abundance from 2007 vs. aquatic insect data from EPA National Lakes Assessment survey.
 ```{r}
 
 agg_lakeEmerge # data.frame from 'NLA_MACROS_2021_01_27_FrontEcolEvol.rmd'
@@ -338,7 +338,7 @@ coef(brm_l07_hab,probs=c(0.05,0.95))
 ```
 
 
-## Code chunk to produce Figure 4 (coefficients of species-level bird responses to aquatic insects from lakes)
+Code chunk to produce Figure 4 (coefficients of species-level bird responses to aquatic insects from lakes)
 ```{r}
 
 #bbs_coefs <- rbind(str04_coef,str04_ept_coef,str04_tol_coef,lake07_coef,lake07_ept_coef,lake07_tol_coef)
