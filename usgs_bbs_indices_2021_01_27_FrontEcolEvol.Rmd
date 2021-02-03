@@ -1,0 +1,406 @@
+---
+title: "bbs_annual_indices"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+# USGS Breeding Bird Survey Analysis for Manning & Sullivan 2021
+```{r load dplyr}
+
+library(dplyr)
+
+```
+
+## USGS analyzed data (annual indices of abundance) can be found here: https://www.mbr-pwrc.usgs.gov/
+```{r  load bbs data}
+bbs_indices=read.csv("/Users/davidmanning/Documents/BBS_Annual_Indices_Estimates_2015_7-29-2016.csv")
+head(bbs_indices) # check
+str(bbs_indices) # check structure
+
+```
+
+## The following code chunk removes data from Canada, subsets BBS data to to aerial insectivore species, plus Mourning Dove, Goldfinch, Gray Catbird, White-breasted Nuthatch
+```{r}
+
+levels(bbs_indices$Region.Code) # check Region.Code
+levels(bbs_indices$AOU.Number) # check AOU.Number
+us_regions=c("ALA","ARI","ARK","CAL","COL","CON","DEL","FLA","GA ","IA ","IDA","ILL","IND","KAN","KY ","LA ","MAS","MD ","ME ","MIC","MIN","MIS","MO ","MON","NC ","ND ","NEB","NEV","NH ","NJ ","NM ","NY ","OHI","OKL","ORE","PA ","RI ","SC ","SD ","TEN","TEX","UT ","VA ","VT ","WAS","WIS","WV ","WYO") # vector of Region.Codes
+bbs_indices[5794,] # check
+
+spp_list=c("s04470","s04620","s04660","s04630","s04590","s04641","s06110","s04570","s06140","s04560","s04171","s04610","s04520","s04670","s04650","s04661","s06130","s04230","s04200","s04440","s05290","s03160","s07270","s07040","s06170","s06150") # list of aerial insectivore spp. + 'ref' spp.
+length(spp_list) # check length
+
+spp_names=c("WEKI","WEWP","WIFL","YBFL","OSFL","PSFL","PUMA","SAPH","TRES","EAPH","EWPW","EAWP","GCFL","LEFL","ACFL","ALFL","BARS","CHSW","CONI","EAKI","AMGO","MODO","WBNU","GRCA","NRWS","VGSW") # vector of spp abbreviations.
+length(spp_names) # check length
+
+habitat <- c("Upland","Upland","Riparian Obligate","Riparian Facultative","Riparian Facultative","Riparian Facultative","Riparian Facultative","Upland","Riparian Obligate","Riparian Facultative","Upland","Upland","Riparian Obligate","Upland","Riparian Obligate","Riparian Obligate","Riparian Facultative","Riparian Facultative","Riparian Facultative","Riparian Facultative","Non-aerial insectivore","Non-aerial insectivore","Non-aerial insectivore","Non-aerial insectivore","Non-aerial insectivore","Upland") # vector of habitats for bird species analyzed.
+
+spp <- data.frame(spp_list,spp_names,habitat) # data.frame with AOU.Numbers lined up with spp abbreviations.
+colnames(spp) <- c("AOU.Number","name","habitat") # change column names
+
+usgs_spp=filter(bbs_indices,AOU.Number%in%spp_list) # subset the data to AOU.Numbers incl. in spp list.
+usgs_us=filter(usgs_spp,Region.Code%in%us_regions) # subset to US states only.
+sort(unique(usgs_us$Region.Code)) # check Region.Code
+
+bbs_ref=usgs_us
+names(usgs_us)
+
+```
+
+## code chunk subsets BBS dataset by year(s) that coincided with US EPA's Wadeable Streams Assessment (2000-2004), and National Lakes Assessment (2007) (plus 2008 and 2009)
+```{r subset bbs dataset by year}
+
+# note: PSFL not available in these data, likely because of discussion surrounding its sympatry with Cordilleran Flycatcher.
+
+library(dplyr)
+
+bbs_2000 <- bbs_ref %>%
+  filter(Year=="2000") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2001 <- bbs_ref %>%
+  filter(Year=="2001") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2002 <- bbs_ref %>%
+  filter(Year=="2002") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2003 <- bbs_ref %>%
+  filter(Year=="2003") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2004 <- bbs_ref %>%
+  filter(Year=="2004") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+levels(bbs_2004$AOU.Number)
+
+bbs_2005 <- bbs_ref %>%
+  filter(Year=="2005") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2006 <- bbs_ref %>%
+  filter(Year=="2006") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2007 <- bbs_ref %>%
+  filter(Year=="2007") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2008 <- bbs_ref %>%
+  filter(Year=="2008") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+
+bbs_2009 <- bbs_ref %>%
+  filter(Year=="2009") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+head(bbs_2009) # check
+
+# combine all years
+bbs_00_09 <- bbs_ref %>%
+  filter(Year=="2000"|Year=="2009") %>%
+  group_by(AOU.Number,Region.Code) %>%
+    summarise(ann_ind=mean(Annual.Index))
+nrow(bbs_00_09)
+
+bbs_00_09 <- rbind(bbs_2000,bbs_2001,bbs_2002,bbs_2003,bbs_2004,bbs_2005,bbs_2006,bbs_2007,bbs_2008,bbs_2009)
+nrow(bbs_00_09) # check rows
+
+bbs_00_09$year <- c(rep("2000",837),rep("2001",837),rep("2002",837),rep("2003",837),rep("2004",837),rep("2005",837),rep("2006",837),rep("2007",837),rep("2008",837),rep("2009",837))
+
+
+
+```
+
+## compare annual index values among years
+```{r}
+
+bbs_year_lm <- lm(ann_ind~year,data=bbs_00_09)
+summary(bbs_year_lm) # all p > 0.05
+
+bbs_aov <- aov(ann_ind~year,data=bbs_00_09)
+summary(bbs_aov)
+
+
+
+```
+
+## BBS Annual index values not different among years in this time span, proceed with analysis focusing on final year of WSA (2004) and NLA (2007). This chunk subsets the data to those years only and joins with aquatic insect data from EPA surveys.
+
+``` {r}
+
+bbs_2004_emerge <- inner_join(bbs_2004,agg_str_metrics) # join with aquatic insect data frames from 'EPA_emergence_2021_01_27_FrontEcolEvol.rmd'
+unique(bbs_2004_emerge$AOU.Number) # check AOU.Number
+bbs_2004_1 <- inner_join(bbs_2004_emerge,spp) # join above data frame to add species abbreviations
+which(bbs_2004_1$ann_ind==0) # check for zeros
+bbs_2004_1[94,] #inspect row with zero value
+length(unique(bbs_2004_1$name)) #check
+
+bbs_2007_emerge <- inner_join(bbs_2007,agg_p.emerge)
+bbs_2007_1 <- inner_join(bbs_2007_emerge,spp)
+which(bbs_2007_1$ann_ind==0) # check for zeros
+bbs_2004_1[94,] #inspect row with zero value
+length(unique(bbs_2004_1$name)) #check
+
+```
+
+``` {r check BBS data for normal distribution}
+
+# q-q plots
+qq_04 <- ggplot(data=bbs_2004_1,aes(sample=ann_ind)) + stat_qq_line() + stat_qq_point() + labs(x="Theoretical Quantiles",y="Sample Quantiles",title="BBS 2004 Q-Q plot")
+qq_04
+
+qq_07 <- ggplot(data=bbs_2007_1,aes(sample=ann_ind)) + stat_qq_line() + stat_qq_point() + labs(x="Theoretical Quantiles",y="Sample Quantiles",title="BBS 2007 Q-Q plot")
+qq_07
+
+# Kolmogorov-Smirnov tests
+ks.test(bbs_2004_1$ann_ind[-94],pnorm) # D = 0.545, P << 0.001
+ks.test(bbs_2007_1$ann_ind[-94],pnorm) # D = 0.542, P << 0.001
+
+
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+boxplot(Annual.Index~AOU.Number,data=bbs_ref)
+summary(bbs_ref)
+
+zero_ind=which(bbs_ref$Annual.Index==0)
+bbs_rem=bbs_ref[-zero_ind,]
+
+agg_p.emerge$Region.Code <- c("ALA","ARI","ARK","CAL","COL","CON","DEL","FLA","GA ","IDA","ILL","IND","IA ","KAN","KY ","LA ","ME ","MD ","MAS","MIC","MIN","MIS","MO ","MON","NEB","NEV","NH ","NJ ","NM ","NY ","NC ","ND ","OHI","OKL","ORE","PA ","RI ","SC ","SD ","TEN","TEX","UT ","VT ","VA ","WAS","WV ","WIS","WYO")
+
+agg_str_metrics$Region.Code <- c("ALA","ARI","ARK","CAL","COL","CON","DEL","FLA","GA ","IDA","ILL","IND","IA ","KAN","KY ","LA ","ME ","MD ","MAS","MIC","MIN","MIS","MO ","MON","NEB","NEV","NH ","NJ ","NM ","NY ","NC ","ND ","OHI","OKL","ORE","PA ","RI ","SC ","SD ","TEN","TEX","UT ","VT ","VA ","WAS","WV ","WIS","WYO")
+
+
+```
+
+## Bayesian models testing for relationships between bird species annual indices of abundance and relative abundance of emergent insects (streams + lakes)
+```{r}
+
+library(brms)
+
+# species-level model (random slope for each aerial insectivore species)
+brm04 <- brm(log10(ann_ind) ~ p.emerge + (1 + p.emerge|name),data=bbs_2004_1[-94,],family=gaussian,chains=4,iter=2000,warmup=1000)
+fixef(brm04,probs=c(0.05,0.95)) # check fixed effects
+ranef(brm04,probs=c(0.05,0.95)) # check random effects
+str04_coef <- data.frame(coef(brm04,probs=c(0.05,0.95))) # create data.frame of spp-level coefficients
+
+# habitat-level model (random slope for each habitat guild: riparian obligate, riparian facultative, upland, non-aerial insectivore)
+brm04_hab <- brm(log10(ann_ind) ~ p.emerge + (1 + p.emerge|habitat) ,data=bbs_2004_1[-94,],family=gaussian,chains=4,iter=2000,warmup=1000)
+fixef(brm04_hab)
+coef(brm04_hab,probs=c(0.05,0.95))
+
+```
+
+## Bayesian models for relationships between BBS annual indices of abundance and Ephemeroptera, Plecoptera, Trichoptera (EPA metric = 'EPT_PIND'), and percent tolerant individuals (EPA metric = 'TOLRPIND') found in streams.
+```{r}
+bbs_2004_1$pEPT=bbs_2004_1$EPT_PIND/100 # convert from % to proportion
+bbs_2004_1$pTOL <- bbs_2004_1$TOLRPIND/100 # convert from % to proportion
+
+brm04_ept <- brm(log10(ann_ind) ~ pEPT + (1 + pEPT|name),data=bbs_2004_1[-94,],family=gaussian,chains=4,iter=2000,warmup=1000)
+coef(brm04_ept,probs=c(0.05,0.95))
+str04_ept_coef <- data.frame(coef(brm04_ept,probs=c(0.05,0.95)))
+
+brm04_tol <- brm(log10(ann_ind) ~ pTOL + (1 + pTOL|name),data=bbs_2004_1[-94,],family=gaussian,chains=4,iter=2000,warmup=1000)
+fixef(brm04_tol)
+coef(brm04_tol,probs=c(0.05,0.95))
+
+str04_tol_coef <- data.frame(coef(brm04_tol,probs=c(0.05,0.95)))
+
+str04_coef <- data.frame(coef(brm04,probs=c(0.05,0.95)))
+str04_ept_coef <- data.frame(coef(brm04_ept,probs=c(0.05,0.95)))
+str04_tol_coef <- data.frame(coef(brm04_tol,probs=c(0.05,0.95)))
+
+
+```
+
+
+### Code to produce Figure 3 (coefficients of bird responses to stream insects by species)
+```{r}
+
+names(str04_coef)
+
+str04_coef$spp_abb <- c("ACFL","ALFL","AMGO","BARS","CHSW","CONI","EAKI","EAPH","EAWP","EWPW","GCFL","GRCA","LEFL","MODO","NRWS","OSFL","PUMA","SAPH","TRES","VGSW","WBNU","WEKI","WEWP","WIFL","YBFL") # add spp abbreviations to the data.frame
+
+str04_coef$Habitat <- c("RO","RO","NON","RF","RF","RF","RF","RF","UP","UP","RO","NON","UP","NON","RO","RF","RF","UP","RO","UP","NON","UP","UP","RO","RF") # add habitat to the data.frame
+
+colnames(str04_coef) <- c("Int","ErrInt","Q5Int","Q95Int","Est","Err","Q5","Q95","spp_abb","Habitat") # rename columns
+head(str04_coef) # check
+
+order_ests <- str04_coef %>%
+  arrange(Est,spp_abb) %>%
+  mutate(name=factor(spp_abb, levels=spp_abb)) # sorts the slopes in numerical order
+
+stp <- ggplot() + geom_point(data=order_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=order_ests,aes(x=Q5,y=name,xend=Q95,yend=name,color=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Estimate") + theme(text=element_text(size=20)) + theme(legend.position="none")
+stp
+
+# add species abbreviations and habitats to stream EPT data.frame.
+str04_ept_coef$spp_abb <- c("ACFL","ALFL","AMGO","BARS","CHSW","CONI","EAKI","EAPH","EAWP","EWPW","GCFL","GRCA","LEFL","MODO","NRWS","OSFL","PUMA","SAPH","TRES","VGSW","WBNU","WEKI","WEWP","WIFL","YBFL")
+str04_ept_coef$Habitat <- c("RO","RO","NON","RF","RF","RF","RF","RF","UP","UP","RO","NON","UP","NON","RO","RF","RF","UP","RO","UP","NON","UP","UP","RO","RF")
+colnames(str04_ept_coef) <- c("Int","ErrInt","Q5Int","Q95Int","Est","Err","Q5","Q95","spp_abb","Habitat")
+head(str04_ept_coef)
+
+order_ept_ests <- str04_ept_coef %>%
+  arrange(Est,spp_abb) %>%
+  mutate(name=factor(spp_abb, levels=spp_abb)) # sort slopes in numerical order.
+
+st_ept <- ggplot() + geom_point(data=order_ept_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=order_ept_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="") + theme(text=element_text(size=20)) + theme(legend.position="none")
+st_ept
+
+# add species abbreviations and habitats to stream TOLRPIND data.frame.
+str04_tol_coef$spp_abb <- c("ACFL","ALFL","AMGO","BARS","CHSW","CONI","EAKI","EAPH","EAWP","EWPW","GCFL","GRCA","LEFL","MODO","NRWS","OSFL","PUMA","SAPH","TRES","VGSW","WBNU","WEKI","WEWP","WIFL","YBFL")
+str04_tol_coef$Habitat <- c("RO","RO","NON","RF","RF","RF","RF","RF","UP","UP","RO","NON","UP","NON","RO","RF","RF","UP","RO","UP","NON","UP","UP","RO","RF")
+colnames(str04_tol_coef) <- c("Int","ErrInt","Q5Int","Q95Int","Est","Err","Q5","Q95","spp_abb","Habitat")
+str04_tol_coef[,"Est"] # check
+
+order_tol_ests <- str04_tol_coef %>%
+  arrange(Est,spp_abb) %>%
+  mutate(name=factor(spp_abb, levels=spp_abb)) # sort slopes in numerical order
+
+st_tol <- ggplot() + geom_point(data=order_tol_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=order_tol_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient") + theme(text=element_text(size=20)) + theme(legend.position="right")
+st_tol
+
+
+### put figures in multi-panel plot.
+stp <- ggplot() + geom_point(data=order_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=order_ests,aes(x=Q5,y=name,xend=Q95,yend=name,color=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient",title="") + theme(text=element_text(size=20)) + theme(legend.position="none") + annotate("text", label = "Emergent", x = 2.5, y = 1.5, size = 5, colour = "black")
+stp
+
+st_ept <- ggplot() + geom_point(data=order_ept_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=order_ept_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient",title="") + theme(text=element_text(size=20)) + theme(legend.position="none") + annotate("text", label = "EPT", x = 2.5, y = 1.5, size = 5, colour = "black")
+st_ept
+
+st_tol <- ggplot() + geom_point(data=order_tol_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=order_tol_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient",title="") + theme(text=element_text(size=20)) + theme(legend.position="right") +  annotate("text", label = "Tolerant", x = 2.5, y = 1.5, size = 5, colour = "black")
+st_tol
+
+
+ggarrange(stp,st_ept,st_tol,labels=c("a","b","c"),nrow=1)
+
+
+```
+
+
+
+## BBS annual indices of abundance from 2007 vs. aquatic insect data from EPA National Lakes Assessment survey.
+```{r}
+
+agg_lakeEmerge # data.frame from 'NLA_MACROS_2021_01_27_FrontEcolEvol.rmd'
+agg_lakeEmerge$Region.Code <- c("ALA","ARI","ARK","CAL","COL","CON","DEL","FLA","GA ","IDA","ILL","IND","IA ","KAN","KY ","LA ","ME ","MD ","MAS","MIC","MIN","MIS","MO ","MON","NEB","NEV","NH ","NJ ","NM ","NY ","NC ","ND ","OHI","OKL","ORE","PA ","RI ","SC ","SD ","TEN","TEX","UT ","VT ","VA ","WAS","WV ","WIS","WYO") # add state abbreviations to data.frame
+
+bbs_2007_lake <- inner_join(bbs_2007,join_lakes_metrics)
+bbs_2007_l <- inner_join(bbs_2007_lake,spp)
+which(bbs_2007_1$ann_ind==0)
+
+l07<- ggplot() + geom_point(data=bbs_2007_l[-94,],aes(x=l.emerge,y=ann_ind)) + geom_smooth(data=bbs_2007_l[-94,],aes(x=l.emerge,y=ann_ind),method="lm") + facet_wrap(~name) + theme_bw() + xlab("Rel. abund. emergent") + ylab("State-level mean annual index") + scale_y_log10()
+l07
+
+# Bayesian model relating BBS annual indices to lake emergent insect values.
+brm_l07 <- brm(log10(ann_ind) ~ l.emerge + (1 + l.emerge|name),data=bbs_2007_l[-94,],family=gaussian,chains=4,iter=2000,warmup=1000)
+coef(brm_l07,probs=c(0.05,0.95))
+?brm
+
+lakes07_coef <- data.frame(coef(brm_l07,probs=c(0.05,0.95))) # data.frame of species-level slopes.
+
+names(bbs_2007_l)
+
+# convert lake 'EPT_PIND' and 'TOLRPIND' from % to proportion.
+bbs_2007_l$pEPT <- bbs_2007_l$EPT_PIND/100
+bbs_2007_l$pTOL <- bbs_2007_l$TOLRPIND/100
+
+brm_l07_ept <- brm(log10(ann_ind) ~ pEPT + (1 + pEPT|name),data=bbs_2007_l[-94,],family=gaussian,chains=4,iter=2000,warmup=1000)
+coef(brm_l07_ept,probs=c(0.05,0.95))
+
+lakes07_ept_coef <- data.frame(coef(brm_l07_ept,probs=c(0.05,0.95)))
+
+brm_l07_tol <- brm(log10(ann_ind) ~ pTOL + (1 + pTOL|name),data=bbs_2007_l[-94,],family=gaussian,chains=4,iter=2000,warmup=1000,control=list(adapt_delta=0.95))
+coef(brm_l07_tol,probs=c(0.05,0.95))
+
+lakes07_tol_coef <- data.frame(coef(brm_l07_tol,probs=c(0.05,0.95)))
+
+# habitat-level model for lakes.
+brm_l07_hab <- brm(log10(ann_ind) ~ l.emerge + (1 + l.emerge|habitat), data=bbs_2007_l[-94,],family=gaussian,chains=4,iter=2000,warmup=1000)
+fixef(brm_l07_hab,probs=c(0.05,0.95))
+coef(brm_l07_hab,probs=c(0.05,0.95))
+
+
+```
+
+
+## Code chunk to produce Figure 4 (coefficients of species-level bird responses to aquatic insects from lakes)
+```{r}
+
+#bbs_coefs <- rbind(str04_coef,str04_ept_coef,str04_tol_coef,lake07_coef,lake07_ept_coef,lake07_tol_coef)
+#head(bbs_coefs)
+names(lakes07_coef)
+lakes07_coef
+
+
+lakes07_coef$spp_abb <- c("ACFL","ALFL","AMGO","BARS","CHSW","CONI","EAKI","EAPH","EAWP","EWPW","GCFL","GRCA","LEFL","MODO","NRWS","OSFL","PUMA","SAPH","TRES","VGSW","WBNU","WEKI","WEWP","WIFL","YBFL") # add common name abbreviations
+lakes07_coef$Habitat <- c("RO","RO","NON","RF","RF","RF","RF","RF","UP","UP","RO","NON","UP","NON","RO","RF","RF","UP","RO","UP","NON","UP","UP","RO","RF") # add habitat category
+head(lakes07_coef)
+colnames(lakes07_coef) <- c("Int","ErrInt","Q5Int","Q95Int","Est","Err","Q5","Q95","spp_abb","Habitat") # change colnames
+head(lakes07_coef) # check
+
+lakes_order_ests <- lakes07_coef %>%
+  arrange(Est,spp_abb) %>%
+  mutate(name=factor(spp_abb, levels=spp_abb)) # sort slopes in numerical order
+
+
+lkp <- ggplot() + geom_point(data=lakes_order_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=lakes_order_ests,aes(x=Q5,y=name,xend=Q95,yend=name,color=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Estimate") + theme(text=element_text(size=20)) + theme(legend.position="none")
+lkp
+
+# lakes EPT
+lakes07_ept_coef$spp_abb <- c("ACFL","ALFL","AMGO","BARS","CHSW","CONI","EAKI","EAPH","EAWP","EWPW","GCFL","GRCA","LEFL","MODO","NRWS","OSFL","PUMA","SAPH","TRES","VGSW","WBNU","WEKI","WEWP","WIFL","YBFL")
+lakes07_ept_coef$Habitat <- c("RO","RO","NON","RF","RF","RF","RF","RF","UP","UP","RO","NON","UP","NON","RO","RF","RF","UP","RO","UP","NON","UP","UP","RO","RF")
+colnames(lakes07_ept_coef) <- c("Int","ErrInt","Q5Int","Q95Int","Est","Err","Q5","Q95","spp_abb","Habitat")
+head(lakes07_ept_coef)
+
+lakes_order_ept_ests <- lakes07_ept_coef %>%
+  arrange(Est,spp_abb) %>%
+  mutate(name=factor(spp_abb, levels=spp_abb)) # sort slopes in numerical order
+
+lake_ept <- ggplot() + geom_point(data=lakes_order_ept_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=lakes_order_ept_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="") + theme(text=element_text(size=20)) + theme(legend.position="none")
+lake_ept
+
+# lakes 'TOLRPIND'
+lakes07_tol_coef$spp_abb <- c("ACFL","ALFL","AMGO","BARS","CHSW","CONI","EAKI","EAPH","EAWP","EWPW","GCFL","GRCA","LEFL","MODO","NRWS","OSFL","PUMA","SAPH","TRES","VGSW","WBNU","WEKI","WEWP","WIFL","YBFL")
+lakes07_tol_coef$Habitat <- c("RO","RO","NON","RF","RF","RF","RF","RF","UP","UP","RO","NON","UP","NON","RO","RF","RF","UP","RO","UP","NON","UP","UP","RO","RF")
+colnames(lakes07_tol_coef) <- c("Int","ErrInt","Q5Int","Q95Int","Est","Err","Q5","Q95","spp_abb","Habitat")
+lakes07_tol_coef[,"Est"] # check
+
+lakes_order_tol_ests <- lakes07_tol_coef %>%
+  arrange(Est,spp_abb) %>%
+  mutate(name=factor(spp_abb, levels=spp_abb)) # sort slopes in numerical order
+
+lakes_tol <- ggplot() + geom_point(data=lakes_order_tol_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=lakes_order_tol_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient") + theme(text=element_text(size=20)) + theme(legend.position="right")
+lakes_tol
+
+
+### combine into multi-panel figure.
+lkp <- ggplot() + geom_point(data=lakes_order_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=lakes_order_ests,aes(x=Q5,y=name,xend=Q95,yend=name,color=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient") + theme(text=element_text(size=20)) + theme(legend.position="none") + annotate("text", label = "Emergent", x = 2.5, y = 1.5, size = 5, colour = "black")
+lkp
+
+lakes_ept <- ggplot() + geom_point(data=lakes_order_ept_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=lakes_order_ept_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient") + theme(text=element_text(size=20)) + theme(legend.position="none") +  annotate("text", label = "EPT", x = 7, y = 1.5, size = 5, colour = "black")
+lakes_ept
+
+lakes_tol <- ggplot() + geom_point(data=lakes_order_tol_ests,aes(x=Est,y=name,color=Habitat),size=3) + theme_classic() + geom_segment(data=lakes_order_tol_ests,aes(x=Q5,y=name,xend=Q95,yend=name,col=Habitat)) + geom_vline(xintercept=0,col="gray") + labs(y="",x="Coefficient") + theme(text=element_text(size=20)) + theme(legend.position="right") + annotate("text", label = "Tolerant", x = 2, y = 1.5, size = 5, colour = "black")
+lakes_tol
+
+ggarrange(lkp,lakes_ept,lakes_tol,labels=c("a","b","c"),nrow=1)
+
+```
+
+
+
